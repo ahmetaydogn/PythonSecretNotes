@@ -1,6 +1,5 @@
 import tkinter as tk
 import base64
-import os
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -44,7 +43,8 @@ class Widgets():
 
         self.save_encrypt_button = tk.Button(text="Save & Encrypt", font=style, width=widget_width, bg="#7f8fa6",
                                              fg="#f5f6fa", command=save_and_encrypt)
-        self.decrypt_button = tk.Button(text="Decrypt", font=style, width=widget_width, bg="#7f8fa6", fg="#f5f6fa")
+        self.decrypt_button = tk.Button(text="Decrypt", font=style, width=widget_width, bg="#7f8fa6",
+                                        fg="#f5f6fa", command=decrypt)
 
         self.title_label.pack()
         self.title_entry.pack(pady=(0, 20))
@@ -59,21 +59,36 @@ class Widgets():
         self.decrypt_button.pack()
 
 class CryptographyFunctions():
-    salt = os.urandom(16) # bytes tipinde bir değişken oluştur
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=480000,
-    )
+    salt = bytes(b'/\xbe\xef\xd3\x19\xf7\xd9\n\xc7\x9a\xd5\x92c\x88\xac\x01')
+    # salt = os.urandom(16) -> random salt oluştur, program her başladığında key'leri değiştirir
 
     def cryption_func(self, master_key: str, content: str):
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=self.salt,
+            iterations=480000,
+        )
         master_key = bytes(master_key, 'utf-8')
-        key = base64.urlsafe_b64encode(self.kdf.derive(master_key))
+        key = base64.urlsafe_b64encode(kdf.derive(master_key))
+        print(key)
         fernet = Fernet(key)
         encrypt_text = bytes(content, 'utf-8')
         token = fernet.encrypt(encrypt_text)
         return token
+    def encryption_func(self, master_key: str, content: str):
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=self.salt,
+            iterations=480000,
+        )
+        master_key = bytes(master_key, 'utf-8')
+        content = content[2 : len(content) - 1]
+        key = base64.urlsafe_b64encode(kdf.derive(master_key))
+        fernet = Fernet(key)
+        token = bytes(content, 'utf-8')
+        return fernet.decrypt(token).decode()
 
 
 # Defines
@@ -88,8 +103,23 @@ def save_and_encrypt():
         with open("my_secret.txt", mode='a') as f:
             result = str(cryptographyFunc.cryption_func(text_master_key, text_content))
             added_text = f"{text_title}" + f"\n" + f"{result}"
-            f.write(added_text)
-
+            f.write(f"\n{added_text}")
+def decrypt():
+    try:
+        if widgets.secret_entry.get("1.0", 'end-1c') == "" or widgets.master_key_entry.get() == "":
+            messagebox.showerror("Değerleri Düzgün Giriniz!", "Lütfen değerleri düzgün giriniz.")
+        else:
+            text_content = widgets.secret_entry.get("1.0", 'end-1c')
+            text_master_key = widgets.master_key_entry.get()
+            if cryptographyFunc.encryption_func(text_master_key, text_content) == "":
+                pass
+            else:
+                result = cryptographyFunc.encryption_func(text_master_key, text_content)
+                widgets.secret_entry.delete("1.0", "end-1c")
+                widgets.secret_entry.insert("end-1c", result)
+                print(f"Result: {cryptographyFunc.encryption_func(text_master_key, text_content)}")
+    except:
+        messagebox.showwarning("HATA", "Verdiğiniz 'Secret Text' ve 'Master Key' arasında bir ilişki yoktur!")
 # Image Placement
 def place_image():
     label = tk.Label(window)
@@ -100,6 +130,4 @@ def place_image():
 widgets = Widgets()
 cryptographyFunc = CryptographyFunctions()
 
-# b'gAAAAABlMDthmR0xgK6VBZAxrBuo2yL2i6yICHDd8OO2kh_rQFX-gU1aQD7zEGLvMrPPJyaltFd4Z-5Jc04-tb5cfYT0X_-4eQ=='
-# ahmet123
 window.mainloop()
