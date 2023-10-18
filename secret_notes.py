@@ -71,7 +71,6 @@ class CryptographyFunctions():
         )
         master_key = bytes(master_key, 'utf-8')
         key = base64.urlsafe_b64encode(kdf.derive(master_key))
-        print(key)
         fernet = Fernet(key)
         encrypt_text = bytes(content, 'utf-8')
         token = fernet.encrypt(encrypt_text)
@@ -117,7 +116,6 @@ def decrypt():
                 result = cryptographyFunc.encryption_func(text_master_key, text_content)
                 widgets.secret_entry.delete("1.0", "end-1c")
                 widgets.secret_entry.insert("end-1c", result)
-                print(f"Result: {cryptographyFunc.encryption_func(text_master_key, text_content)}")
     except:
         messagebox.showwarning("HATA", "Verdiğiniz 'Secret Text' ve 'Master Key' arasında bir ilişki yoktur!")
 # Image Placement
@@ -125,7 +123,6 @@ def place_image():
     label = tk.Label(window)
     label.config(image=img)
     label.pack()
-    print("sa")
 
 widgets = Widgets()
 cryptographyFunc = CryptographyFunctions()
